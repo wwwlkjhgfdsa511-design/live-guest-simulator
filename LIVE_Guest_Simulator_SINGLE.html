@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#09090c">
+<title>LIVE Guest Simulator — Mobile</title>
+<style>
+:root{--bg:#09090c;--panel:#15151b;--panel2:#1e1e27;--line:#30303a;--txt:#fff;--muted:#aaaab5;--pink:#fe2c55}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+button,input{font:inherit}.app{min-height:100vh;display:flex;flex-direction:column}
+.top{position:sticky;top:0;z-index:30;background:#111116;border-bottom:1px solid var(--line);padding:10px 12px;display:flex;gap:8px;align-items:center;justify-content:space-between}.title{font-weight:900}.status{font-size:11px;color:#ffb4c2}.status.ok{color:#75f3c0}
+.wrap{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:12px;padding:12px;align-items:start}.preview{background:#000;border-radius:18px;overflow:hidden;position:relative;aspect-ratio:9/16;max-height:calc(100vh - 88px);border:1px solid #2a2a32}
+.stage{width:100%;height:100%;position:relative;overflow:hidden;background:radial-gradient(circle at 35% 35%,#2a2230,#08080d 65%)}
+#bgVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none}.placeholder{position:absolute;inset:0;display:grid;place-items:center;color:#686875;font-size:15px}
+.ui{position:absolute;inset:0;padding:12px;pointer-events:none}.header{display:flex;justify-content:space-between;gap:8px;font-size:10px}.chip{background:rgba(0,0,0,.55);padding:6px 9px;border-radius:999px;border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(8px)}
+.grid{position:absolute;right:5%;top:24%;width:48%;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(4,1fr);gap:7px}.slot{position:relative;aspect-ratio:1/.98;border-radius:12px;overflow:hidden;background:rgba(7,7,12,.42);border:1px solid rgba(255,255,255,.17);backdrop-filter:blur(2px)}.slot.request{display:grid;place-items:center;font-size:11px;font-weight:900;text-shadow:0 2px 8px #000}.avatar{position:absolute;left:50%;top:41%;transform:translate(-50%,-50%);width:52%;aspect-ratio:1;border-radius:50%;object-fit:cover;border:2px solid #fff}.name{position:absolute;left:50%;bottom:12%;transform:translateX(-50%);max-width:88%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:9px;font-weight:900;background:rgba(0,0,0,.72);padding:5px 8px;border-radius:999px}.score{position:absolute;top:4%;left:50%;transform:translateX(-50%);background:linear-gradient(90deg,#21d8ff,#35e9b1);color:#032020;padding:4px 7px;border-radius:999px;font-size:9px;font-weight:1000;min-width:50px;text-align:center}.plus{position:absolute;left:4%;bottom:5%;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;background:#fff;color:#111;font-weight:1000}.mute{position:absolute;right:4%;bottom:5%;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;background:rgba(0,0,0,.65);font-size:9px}
+.lion{position:absolute;left:11%;top:50%;font-size:74px;z-index:20;opacity:0;transform:translate(-50%,-50%) scale(.3)}.lion.show{animation:pop .9s ease-out forwards}@keyframes pop{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}30%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.3)}}
+.disclaimer{position:absolute;left:6%;bottom:6%;font-size:9px;background:rgba(0,0,0,.55);padding:6px 9px;border-radius:999px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:12px}.section{padding:11px 0;border-top:1px solid var(--line)}.section:first-child{border-top:0;padding-top:0}.section h2{font-size:15px;margin:0 0 8px}.row{display:flex;gap:7px}.row>*{flex:1}.input{width:100%;background:var(--panel2);border:1px solid var(--line);color:#fff;border-radius:10px;padding:9px;outline:none}.btn{border:1px solid var(--line);background:#262630;color:#fff;border-radius:10px;padding:9px;font-weight:900}.btn.primary{background:var(--pink);border-color:var(--pink)}.btn.green{background:#155d52;border-color:#248a7a}.btn.red{background:#4b1c29;border-color:#6f293e}
+.giftlist{display:flex;flex-direction:column;gap:7px;max-height:300px;overflow:auto}.gift{display:grid;grid-template-columns:42px minmax(0,1fr) 82px;align-items:center;gap:8px;background:#1b1b23;border:1px solid #2a2a35;border-radius:12px;padding:7px}.gift img{width:42px;height:42px;border-radius:50%;object-fit:cover}.nm{font-size:12px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.meta{font-size:10px;color:var(--muted);margin-top:2px}.use{padding:7px;border-radius:8px;border:1px solid #3a3a45;background:#24242d;color:#fff;font-size:10px;font-weight:900}
+.slots{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.slotbtn{padding:8px 2px;border-radius:8px;background:#22222c;border:1px solid #353541;color:#fff;font-size:10px;font-weight:900}.slotbtn.sel{background:var(--pink);border-color:var(--pink)}.mini{font-size:10px;color:var(--muted);line-height:1.4}.file{display:none}.filelabel{display:block;text-align:center;border:1px dashed #555562;background:#1a1a22;color:#ddd;border-radius:10px;padding:9px;cursor:pointer}
+@media(max-width:900px){.wrap{grid-template-columns:1fr}.preview{width:100%;max-width:430px;max-height:none;margin:0 auto}.panel{width:100%}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top"><div class="title">LIVE Guest Simulator — Mobile</div><div id="status" class="status">وضع تجريبي</div></div>
+  <div class="wrap">
+    <div class="preview"><div class="stage">
+      <video id="bgVideo" playsinline muted loop></video>
+      <div id="placeholder" class="placeholder">اختر فيديو الخلفية من لوحة التحكم</div>
+      <div class="ui">
+        <div class="header"><span class="chip">LIVE • SIMULATION</span><span class="chip">SUPPORT</span></div>
+        <div id="grid" class="grid"></div>
+        <div class="disclaimer">محاكاة ترفيهية • Guest وهمي</div>
+      </div>
+      <div id="lion" class="lion">🦁</div>
+    </div></div>
+
+    <div class="panel">
+      <div class="section">
+        <h2>مصدر الخلفية</h2>
+        <label class="filelabel" for="videoFile">اختيار فيديو من الهاتف</label>
+        <input id="videoFile" class="file" type="file" accept="video/*">
+      </div>
+
+      <div class="section">
+        <h2>الهدايا الواردة</h2>
+        <div id="giftList" class="giftlist"></div>
+        <div class="row" style="margin-top:7px">
+          <button id="demoGift" class="btn">إضافة هدية تجريبية</button>
+          <button id="lionBtn" class="btn green">🦁 الأسد</button>
+        </div>
+        <div class="mini" style="margin-top:7px">هذه نسخة تعمل مباشرة من Safari بدون OBS أو سيرفر. الهدايا هنا تجريبية. citeturn136743search3turn136743search4</div>
+      </div>
+
+      <div class="section">
+        <h2>الخانة المستهدفة</h2>
+        <div id="slotButtons" class="slots"></div>
+      </div>
+
+      <div class="section">
+        <h2>التحكم بالضيف المختار</h2>
+        <div class="row">
+          <input id="name" class="input" placeholder="اسم المستخدم">
+          <input id="avatar" class="input" placeholder="رابط صورة">
+        </div>
+        <div class="row" style="margin-top:7px">
+          <label class="filelabel" for="avatarFile">اختيار صورة من الهاتف</label>
+          <input id="avatarFile" class="file" type="file" accept="image/*">
+          <button id="add" class="btn primary">وضع في الخانة</button>
+        </div>
+        <div class="row" style="margin-top:7px"><button id="clear" class="btn red">إفراغ الخانة</button><button id="clearAll" class="btn red">إفراغ الكل</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+const state = Array.from({length:8},()=>({active:false,name:"",avatar:"",timer:null}));
+let selectedSlot=0, selectedAvatar="";
+const demo=[
+ {nickname:"Ahmed",username:"ahmed_demo",giftName:"Galaxy",avatar:"https://i.pravatar.cc/200?img=12"},
+ {nickname:"Ali",username:"ali_demo",giftName:"Rose",avatar:"https://i.pravatar.cc/200?img=33"},
+ {nickname:"Hassan",username:"hassan_demo",giftName:"Lion",avatar:"https://i.pravatar.cc/200?img=51"}
+];
+const $=id=>document.getElementById(id);
+function esc(s){return String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));}
+function render(){
+  $("grid").innerHTML=state.map((s,i)=>s.active?
+    `<div class="slot"><div class="score" id="score${i}">0</div><img class="avatar" src="${esc(s.avatar||'https://i.pravatar.cc/200?u='+encodeURIComponent(s.name))}"><div class="name">${esc(s.name)}</div><div class="plus">+</div><div class="mute">🔇</div></div>`:
+    `<div class="slot request">REQUEST</div>`).join("");
+  $("slotButtons").innerHTML=state.map((_,i)=>`<button class="slotbtn ${i===selectedSlot?'sel':''}" data-i="${i}">Guest ${i+1}</button>`).join("");
+  document.querySelectorAll(".slotbtn").forEach(b=>b.onclick=()=>{selectedSlot=+b.dataset.i;render();});
+}
+function addToSlot(name,avatar){
+  const i=selectedSlot;
+  if(state[i].timer) cancelAnimationFrame(state[i].timer);
+  state[i]={active:true,name:name||"Guest",avatar:avatar||selectedAvatar};
+  render(); animate(i); showLion();
+}
+function animate(i){
+  const st=performance.now(), dur=45000, max=499900;
+  const tick=now=>{
+    if(!state[i].active) return;
+    const p=Math.min(1,(now-st)/dur);
+    const el=$("score"+i); if(el) el.textContent=(max*p/1000).toFixed(1)+"K";
+    if(p<1) state[i].timer=requestAnimationFrame(tick);
+    else setTimeout(()=>clearSlot(i),600);
+  }; state[i].timer=requestAnimationFrame(tick);
+}
+function clearSlot(i){if(state[i].timer)cancelAnimationFrame(state[i].timer);state[i]={active:false,name:"",avatar:"",timer:null};render();}
+function showLion(){const el=$("lion");el.classList.remove("show");void el.offsetWidth;el.classList.add("show");}
+function useGift(g){$("name").value=g.nickname||g.username||"";$("avatar").value=g.avatar||"";selectedAvatar=g.avatar||"";addToSlot(g.nickname||g.username||"Guest",g.avatar||"");}
+function addDemo(){const g=demo[Math.floor(Math.random()*demo.length)]; const card=document.createElement("div"); card.className="gift"; card.innerHTML=`<img src="${g.avatar}"><div><div class="nm">${esc(g.nickname)}</div><div class="meta">${esc(g.giftName)} • LIVE</div></div><button class="use">اختيار</button>`;card.querySelector("button").onclick=()=>useGift(g);$("giftList").prepend(card);}
+$("demoGift").onclick=addDemo;$("lionBtn").onclick=showLion;
+$("add").onclick=()=>addToSlot($("name").value.trim(), selectedAvatar||$("avatar").value.trim());
+$("clear").onclick=()=>clearSlot(selectedSlot);$("clearAll").onclick=()=>state.forEach((_,i)=>clearSlot(i));
+$("videoFile").onchange=e=>{const f=e.target.files[0];if(!f)return;const v=$("bgVideo");v.src=URL.createObjectURL(f);v.style.display="block";$("placeholder").style.display="none";v.play().catch(()=>{});}
+$("avatarFile").onchange=e=>{const f=e.target.files[0];if(!f)return;selectedAvatar=URL.createObjectURL(f);$("avatar").value="";}
+
+$("status").textContent="وضع تجريبي";
+render();
+</script>
+</body>
+</html>
