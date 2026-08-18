@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Guest Control</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#08080c;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}.wrap{max-width:760px;margin:auto;padding:12px}.bar{background:#15151b;border:1px solid #30303a;border-radius:14px;padding:12px;font-weight:900}.small{font-size:10px;color:#999;line-height:1.5;margin-top:6px}.queue{display:flex;flex-direction:column;gap:7px;margin-top:10px}.item{display:grid;grid-template-columns:46px 1fr 90px;gap:7px;align-items:center;background:#1f1f26;border:1px solid #30303b;border-radius:11px;padding:6px}.item img{width:46px;height:46px;border-radius:50%;object-fit:cover}.item b{font-size:11px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.item span{font-size:9px;color:#a1a1aa}.slotGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}.slotBtn{background:#25252d;color:#fff;border:1px solid #3c3c48;border-radius:9px;padding:9px 4px;font-size:10px;font-weight:900}.slotBtn.busy{opacity:.35;pointer-events:none}.pendingItem.selected{outline:2px solid #fe2c55}.assign{background:#fe2c55;color:#fff;border:1px solid #fe2c55;border-radius:8px;padding:7px 4px;font-size:9px;font-weight:900}.section{margin-top:14px}.reset{width:100%;background:#292932;color:#fff;border:1px solid #3c3c46;border-radius:9px;padding:10px;font-weight:900;margin-top:10px}
+.mediaBox{background:#15151b;border:1px solid #30303a;border-radius:11px;padding:10px;margin-top:8px}.mediaRow{display:flex;gap:7px;align-items:center}.mediaInput{flex:1;background:#23232a;color:#fff;border:1px solid #3c3c48;border-radius:8px;padding:8px;font-size:10px}.mediaBtn{background:#2b2b34;color:#fff;border:1px solid #494955;border-radius:8px;padding:8px 10px;font-weight:900;font-size:10px}.danger{background:#3a2025;border-color:#6b343d}.mediaState{font-size:9px;color:#a1a1aa;margin-top:7px}</style></head>
+<body><div class="wrap"><div class="bar">Guest Control</div><div class="small">الضيوف من Gift 500 فقط. الاختيار يدوي. لا توجد أي أزرار تحكم في شاشة البث.</div><div class="section"><b>الهدايا المنتظرة</b><div class="queue" id="queue"></div></div><div class="section"><b>مستطيل المضيف</b><div class="mediaBox"><div class="small">أضف صورة أو فيديو من اختيارك ليظهر داخل مستطيل Host في شاشة البث. هذه الأدوات لا تظهر للمشاهد.</div><div class="mediaRow"><input id="hostMediaFile" class="mediaInput" type="file" accept="image/*,video/*"><button class="mediaBtn" id="uploadHost">إضافة</button><button class="mediaBtn danger" id="clearHost">إزالة</button></div><div id="hostState" class="mediaState">لا توجد وسائط مضافة.</div></div></div><div class="section"><b>الخانات 1–8</b><div class="slotGrid" id="slots"></div></div><button class="reset" id="reset">مسح الجميع</button></div>
+<script>
+let state={slots:[],pending:[]};
+let selectedPending=null;
+const esc=s=>String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+async function refreshHostState(){try{const s=await (await fetch('/host-media-state',{cache:'no-store'})).json();document.getElementById('hostState').textContent=s.active?('تمت إضافة '+(String(s.type).startsWith('video/')?'فيديو':'صورة')+' إلى مستطيل Host.'): 'لا توجد وسائط مضافة.'}catch(e){}}
+async function refresh(){try{state=await (await fetch('/state',{cache:'no-store'})).json();render()}catch(e){}}
+function render(){
+ const slots=document.getElementById('slots');
+ slots.innerHTML=state.slots.map(s=>`<button class="slotBtn ${s.active?'busy':''}" data-slot="${s.slot}">Guest ${s.slot}${s.active?' • مشغول':''}</button>`).join('');
+ document.querySelectorAll('.slotBtn').forEach(b=>b.onclick=()=>assignToSlot(+b.dataset.slot));
+ const q=document.getElementById('queue');
+ q.innerHTML=state.pending.length?state.pending.map(p=>`<div class="item pendingItem ${selectedPending===p.id?'selected':''}" data-id="${p.id}"><img src="${esc(p.avatar||'')}"/><div><b>${esc(p.username)}</b><span>🎁 ${esc(p.gift)} • 500</span></div><button class="assign" onclick="selectGift(${p.id})">${selectedPending===p.id?'تم الاختيار':'اختيار الضيف'}</button></div>`).join(''):'<div class="small">لا توجد هدايا منتظرة.</div>';
+}
+function selectGift(id){selectedPending=id;render();}
+async function assignToSlot(slot){
+ if(!selectedPending){alert('اختر هدية أولاً.');return;}
+ const isBusy=state.slots.find(s=>s.slot===slot)?.active;
+ if(isBusy){alert('هذه الخانة مشغولة. اختر خانة فارغة.');return;}
+ const r=await fetch(`/assign?pending_id=${encodeURIComponent(selectedPending)}&slot=${encodeURIComponent(slot)}`);
+ if(!r.ok){alert('تعذر إدخال الضيف إلى الخانة.');} else {selectedPending=null;}
+ refresh();
+}
+document.getElementById('reset').onclick=async()=>{await fetch('/reset');refresh()};
+document.getElementById('uploadHost').onclick=async()=>{const f=document.getElementById('hostMediaFile').files[0];if(!f){alert('اختر صورة أو فيديو أولاً.');return;}if(f.size>60*1024*1024){alert('الحد الأقصى 60MB.');return;}const fd=new FormData();fd.append('file',f);const r=await fetch('/host-media',{method:'POST',body:fd});const j=await r.json();if(!j.ok){alert('تعذر رفع الملف: '+(j.error||''));return;}document.getElementById('hostMediaFile').value='';refreshHostState();};
+document.getElementById('clearHost').onclick=async()=>{await fetch('/host-media-clear',{method:'POST'});refreshHostState();};
+refresh();refreshHostState();setInterval(refresh,700);setInterval(refreshHostState,2000);
+</script></body></html>
